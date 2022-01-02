@@ -1,0 +1,11 @@
+{
+    "name": "ItemRoulette",
+    "version_number": "2.0.0",
+    "website_url": "",
+    "description": "This mod allows you to specify any number of items allowed to drop for each tier. So if you only want 7 White items to pick from for the entire run, you can do that. It works for all tiers, lunar, and boss. Items can be randomized each fresh run, each new stage, or each new loop.",
+    "dependencies": [
+      "bbepis-BepInExPack-5.4.17",
+	  "tristanmcpherson-R2API-3.0.71"
+    ]
+}
+
