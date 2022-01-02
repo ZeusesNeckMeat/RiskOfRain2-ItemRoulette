@@ -126,7 +126,7 @@ namespace ItemRoulette
             Logger.LogInfo("Loading initial information for AllItemsByType");
             var allItemsByTag = AllItemsByTag.Build(Logger)
                                              .UsingItemsForTags(tier1Through3Items)
-                                             .HavingTotalItemCount(_configSettings.TotalItemCount)
+                                             .HavingTotalItemCount(_configSettings.TotalItemCountForTiers123)
                                              .WithTotalAllowedDamageItemCount(_configSettings.PercentageOfDamageItems)
                                              .WithTotalAllowedHealingItemCount(_configSettings.PercentageOfHealingItems)
                                              .WithTotalAllowedUtilityItemCount(_configSettings.PercentageOfUtilityItems)

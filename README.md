@@ -19,6 +19,9 @@ The list of available tiers to modify are:
 * Boss
 * Lunar
 
+**Important info:**
+* Boss items can be limited, however this won't actually affect drop from a boss. These drops are guaranteed drops by those bosses. Instead any other source where you would get a boss item, such as a 3D Printer will use this list
+
 ## Customizing items by tag
 
 There is a section in the config file called `Item Tag Percents`. In this section, you can customize how many Healing, Utility, and Damage items drop in your runs. If you want half of your items to be Healing and the other half to be Damage then you would set `HealingTypePercentage` to 50, and `DamageTypePercentage` to 50. 
@@ -28,11 +31,12 @@ There is a section in the config file called `Item Tag Percents`. In this sectio
 If you really don't want to do math and you really only care about a specific tag, say `Damage`, then you can set `Damage` to your desired percent, and then set the other two to -1. When the config file regenerates it will default the values that were at `-1` to split the remaining percentage down the middle. 
 For example -> `43, -1, -1` would become `43, 28.5, 28.5`
 
-**Important things to note:**
+**Important info:**
 * If the sum of the three fields ever does exceed 100, then the config will be updated to set all three values to 33%
 * This section does not modify the `Boss` or `Lunar` tiers. This is only for Tiers 1-3.
 * The values you have in your config for Tiers 1, 2, and 3 WILL take precendence over the Type percentages. For example if you have 8 items allowed between Tiers 1, 2, and 3 and you have `DamageTypePercentage` = 25, `UtilityTypePercentage` = 25, and `HealingTypePercentage` = 0, then 2/8 items will be Damage, 2/8 items will be Utility, and the other 4/8 items will be selected at random from all three types. 
 * Each Tag (Damage, Healing, Utility) only has a set amount of items in those categories. Say the `Utility` tag only has 10 items, you have `UtilityTypePercentage` set to 50, and you have a combined total of 30 items allowed in your run between Tier 1, Tier 2, and Tier 3, then all 10 Utility items will be added to the pool, and the remaining 5 items that would have been Utility will be pulled randomly from the other two tags. 
+* If the percentage is too low for a Tag, it's entirely possible an item doesn't generate at all for this tag
 
 ## Changing when the item pool can refresh
 
@@ -57,6 +61,10 @@ The above updates aren't exactly small, but I will try to work on them when I ha
 If you find any bugs, incompatibilities with other mods, or just general suggestions please feel free to add them to the [Issues section](https://github.com/ZeusesNeckMeat/RiskOfRain2-ItemRoulette/issues) in Github!
 	
 ## Changelog
+
+**2.0.1**
+* Fixed a bug where the minimum number of items per ItemTag was not correctly being taken into consideration when Boss and/or Lunar item pool limiters were set
+* Updated Readme to add new info for the `How the item pool limitation works` and `Cusomizing items by tag` sections
 
 **2.0.0**
 * Updated the mod to be compatible with the Aniversary Updated

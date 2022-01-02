@@ -16,7 +16,7 @@ namespace ItemRoulette
 
         public ConfigFile Config { get; private set; }
 
-        public int TotalItemCount => Tier1ItemCount + Tier2ItemCount + Tier3ItemCount + BossItemCount + LunarItemCount;
+        public int TotalItemCountForTiers123 => Tier1ItemCount + Tier2ItemCount + Tier3ItemCount;
         private List<ConfigEntry<double>> _percentagesOfItems = new List<ConfigEntry<double>>();
 
         private ConfigEntry<bool> _isModEnabled;
