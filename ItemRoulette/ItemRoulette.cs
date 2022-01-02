@@ -184,9 +184,6 @@ namespace ItemRoulette
 
         private void LogItemsInDropTable(ItemTier itemTier, List<PickupIndex> items, int configValue)
         {
-            //if (configValue <= 0)
-            //    return;
-
             Logger.LogInfo($"================================{itemTier}============================");
             Logger.LogInfo($"{itemTier} count: {items.Count}");
             foreach (var item in items)

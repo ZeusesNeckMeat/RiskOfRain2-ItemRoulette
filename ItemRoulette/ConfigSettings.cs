@@ -1,5 +1,4 @@
 ﻿using BepInEx.Configuration;
-using BepInEx.Logging;
 using System.Collections.Generic;
 using System.Linq;
 
