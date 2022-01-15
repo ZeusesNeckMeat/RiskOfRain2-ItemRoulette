@@ -37,28 +37,30 @@ namespace ItemRoulette
                 _logger.LogInfo($"Current ItemTag: {tag}. Min Count for ItemTag: {minCount}.");
                 foreach (var (itemTier, itemTags, pickupIndex) in _itemsByTagAndTier)
                 {
+                    var itemName = ItemInfos.GetItemDef(pickupIndex)?.name;
+
                     if (_currentCountOfItemsForTag[tag] == minCount)
                     {
                         _logger.LogInfo($"Min items added for this {tag}");
                         break;
                     }
 
-                    _logger.LogInfo($"Verifying {tag} exists in list of {GetItemDef(pickupIndex).name}'s tags.");
+                    _logger.LogInfo($"Verifying {tag} exists in list of {itemName}'s tags.");
                     if (!itemTags.Contains(tag))
                     {
-                        _logger.LogInfo($"Item not valid for current item tag: {tag} - {GetItemDef(pickupIndex).name}");
+                        _logger.LogInfo($"Item not valid for current item tag: {tag} - {itemName}");
                         continue;
                     }
 
-                    _logger.LogInfo($"Attempting to add {GetItemDef(pickupIndex).name} to {itemTier}");
+                    _logger.LogInfo($"Attempting to add {itemName} to {itemTier}");
                     var itemsInTier = _itemsInTiers.Single(x => x.Tier == itemTier);
                     if (!itemsInTier.TryAddItemToItemsAllowed(pickupIndex))
                     {
-                        _logger.LogInfo($"{GetItemDef(pickupIndex).name} was not added to {itemTier}");
+                        _logger.LogInfo($"{itemName} was not added to {itemTier}");
                         continue;
                     }
 
-                    _logger.LogInfo($"Item added to run. Incrementing counters. {itemTier}-{tag}-{GetItemDef(pickupIndex).name}");
+                    _logger.LogInfo($"Item added to run. Incrementing counters. {itemTier}-{tag}-{itemName}");
                     _currentCountOfItemsForTag[tag]++;
 
                     _logger.LogInfo($"Current Count of items for {itemTier}: {itemsInTier.ItemsAllowed.Count}");
@@ -82,25 +84,6 @@ namespace ItemRoulette
             return _itemsInTiers;
         }
 
-        private IEnumerable<ItemTag> GetItemTags(ItemDef itemDef)
-        {
-            if (itemDef == null)
-                return new List<ItemTag>();
-
-            return itemDef.tags;
-        }
-
-        private ItemDef GetItemDef(PickupIndex pickupIndex)
-        {
-            var pickupDef = PickupCatalog.GetPickupDef(pickupIndex);
-            return pickupDef == null ? null : ItemCatalog.GetItemDef(pickupDef.itemIndex);
-        }
-
-        private ItemTier GetItemTier(ItemDef itemDef)
-        {
-            return itemDef == null ? ItemTier.NoTier : itemDef.tier;
-        }
-
         private int GetRoundedCount(double percentageOfAllowedItems)
         {
             if (percentageOfAllowedItems == 0)
@@ -114,10 +97,10 @@ namespace ItemRoulette
 
         private (ItemTier Tier, List<ItemTag> Tags, PickupIndex Item) GetAllInfoForItem(PickupIndex pickupIndex)
         {
-            var itemDef = GetItemDef(pickupIndex);
+            var itemDef = ItemInfos.GetItemDef(pickupIndex);
 
-            var itemTier = GetItemTier(itemDef);
-            var itemTags = GetItemTags(itemDef).OrderBy(x => Guid.NewGuid()).ToList();
+            var itemTier = ItemInfos.GetItemTier(itemDef);
+            var itemTags = ItemInfos.GetItemTags(itemDef).OrderBy(x => Guid.NewGuid()).ToList();
 
             return (itemTier, itemTags, pickupIndex);
         }

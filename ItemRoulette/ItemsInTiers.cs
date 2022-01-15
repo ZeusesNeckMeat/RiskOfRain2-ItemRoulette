@@ -34,12 +34,14 @@ namespace ItemRoulette
 
         public void GenerateRemainingItems()
         {
+            _logger.LogInfo($"{nameof(ItemsInTiers)}.{nameof(GenerateRemainingItems)} Getting randomized list");
             var randomizedList = _defaultItemsCopied.Where(x => !ItemsAllowed.Contains(x))
                                                     .OrderBy(x => Guid.NewGuid())
                                                     .ToList();
             
             if (!ItemsAllowed.Any(IsItemAllowedForMonsters))
             {
+                _logger.LogInfo($"{nameof(ItemsInTiers)}.{nameof(GenerateRemainingItems)} Adding at least one item for monsters");
                 var itemAllowedForMonsters = randomizedList.First(IsItemAllowedForMonsters);
                 ItemsAllowed.Add(itemAllowedForMonsters);
                 randomizedList.Remove(itemAllowedForMonsters);
@@ -47,7 +49,11 @@ namespace ItemRoulette
             }
 
             var numberOfItemsRemainingToAdd = _maxItemsAllowed - _currentItemsInTier;
+            _logger.LogInfo($"{nameof(ItemsInTiers)}.{nameof(GenerateRemainingItems)} Number of items remaining to add: {numberOfItemsRemainingToAdd}");
+
             var remainingItemsToAdd = randomizedList.Take(numberOfItemsRemainingToAdd);
+            _logger.LogInfo($"{nameof(ItemsInTiers)}.{nameof(GenerateRemainingItems)} Remaining items to add: {string.Join(" - ", remainingItemsToAdd.Select(x => PickupCatalog.GetPickupDef(x).nameToken))}");
+
             ItemsAllowed.AddRange(remainingItemsToAdd);
         }
 
@@ -55,6 +61,12 @@ namespace ItemRoulette
         {
             ItemsInInstance.Clear();
             ItemsInInstance.AddRange(ItemsAllowed.ToList());
+        }
+
+        public void SetItemsInInstance(List<PickupIndex> itemsAllowed)
+        {
+            ItemsInInstance.Clear();
+            ItemsInInstance.AddRange(itemsAllowed.ToList());
         }
 
         public bool TryAddItemToItemsAllowed(PickupIndex pickupIndex)
@@ -116,7 +128,6 @@ namespace ItemRoulette
 
             return !_forbiddenTags.Any(x => itemDef.ContainsTag(x));
         }
-
         public static IAsTier Build(ManualLogSource logger) => new ItemsInTiers(logger);
         public IHavingDefaultItems AsTier(ItemTier itemTier)
         {
@@ -170,6 +181,7 @@ namespace ItemRoulette
 
         void GenerateRemainingItems();
         void SetItemsInInstance();
+        void SetItemsInInstance(List<PickupIndex> itemsAllowed);
         bool TryAddItemToItemsAllowed(PickupIndex pickupIndex);
         bool HasItemLimitBeenReached();
     }
