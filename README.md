@@ -49,18 +49,30 @@ The three current available choices are:
 
 These options should provide a little more variety for longer runs, if wanted. EachStage is probably not needed as it's really not that different from vanilla, but I threw it in there just in case.
 
+## Adding Guaranteed Items to the pool
+
+There is a new section in the config file called `Guaranteed Items`. This section will show you all of the items generated for each tier with a number next to them. You can only specify **one** item per tier, and you would place the number of that item into the config setting. This item will be added as an "extra" item to that tier. So if you specify 5 items for `Tier 1` and you have `Paul's Goat Hoof` as your guaranteed item, then `Tier 1` will have 6 total items.
+
+Along with being able to set one guaranteed item per tier, there is also a setting for whether or not you want the items you've set as guaranteed to be the ***only*** items in that tier. So for whatever reason if you want to have `Soldier's Syringe` as your only `Tier 1` item, then you would add it's number to the appropriate setting, and set `Should only use guaranteed items` to `true`. This will ignore your `Tier 1` settings while you have both `Should only use guaranteed items` set to `true` and any item numbers in any of the settings in this section.
+
 ## Current plans for future updates
-* Add sections to the config to be able to add items to a sort of "guaranteed" list. So if you want to play with random items every time, but you also want to make sure Paul's Goat Hoofs is always an option, then this will provide that functionality
-	* I would probably also want to add something to be able to say whether or not the "guaranteed" items will be taken into consideration when counting the number of items per tier. So if you want 5 `Tier 1` items and also want to make sure you have Paul's Goat Hoofs, do you want Paul's Goat Hoof to be one of those 5 items and pick the other 4 at random, or still pick 5 at random, and just add Paul's Goat Hoofs to that list
 * Update the Tag settings to be able to set the percentage of tags at a Tier level. So if you wanted only 1 `Tier 3` item, and wanted to guaratee that it was always a `Damage` item, this would allow you to do that
 
 The above updates aren't exactly small, but I will try to work on them when I have the free time. I actually really want these added myself.
+
+## General Notes / Known Issues
+* Damage/Healing/Utility chests might not give any item when opened. The chances of receiving nothing all depends on the settings specified in the config.
+* Items available for monsters to have, either through `Void Fields` or the `Artifact of Evolution` completely ignore this mod entirely, and are pulled from all items in the game.
 
 ## Other info
 
 If you find any bugs, incompatibilities with other mods, or just general suggestions please feel free to add them to the [Issues section](https://github.com/ZeusesNeckMeat/RiskOfRain2-ItemRoulette/issues) in Github!
 	
 ## Changelog
+
+**2.1.0**
+* Added config settings for Guaranteed Items
+* Refactored the main file to break out the code into some, somewhat, more meaningful groups
 
 **2.0.1**
 * Fixed a bug where the minimum number of items per ItemTag was not correctly being taken into consideration when Boss and/or Lunar item pool limiters were set
