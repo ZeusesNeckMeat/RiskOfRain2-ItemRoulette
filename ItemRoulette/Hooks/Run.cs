@@ -1,4 +1,5 @@
 ﻿using BepInEx.Logging;
+using ItemRoulette.Configs;
 using On.RoR2.Artifacts;
 
 using Hook = On.RoR2;
@@ -49,8 +50,8 @@ namespace ItemRoulette.Hooks
             if (newLoopStarted)
                 _currentLoopCount = RoR2Run.instance.loopClearCount;
 
-            var shouldRefreshItemPool = _configSettings.ItemRefreshOptions == ItemRefreshOptions.EachStage
-                                        || (_configSettings.ItemRefreshOptions == ItemRefreshOptions.EachLoop && newLoopStarted);
+            var shouldRefreshItemPool = _configSettings.GeneralSettings.ItemRefreshOptions == ItemRefreshOptions.EachStage
+                                        || (_configSettings.GeneralSettings.ItemRefreshOptions == ItemRefreshOptions.EachLoop && newLoopStarted);
 
             if (!shouldRefreshItemPool)
                 return;
@@ -103,20 +104,20 @@ namespace ItemRoulette.Hooks
         private void GenerateItemLists()
         {
             ItemInfos.GenerateItemLists();
-            LogItems();
+            //LogItems();
 
             _configSettings.InitializeConfigFile();
         }
 
-        private void LogItems()
-        {
-            var items = ItemInfos.GetItemInfosDictionary();
+        //private void LogItems()
+        //{
+        //    var items = ItemInfos.GetItemInfosDictionary();
 
-            foreach (var kvp in items)
-            {
-                foreach (var item in kvp.Value)
-                    _logger.LogInfo($"{kvp.Key}:\t{item.Index} -\t{item.Tier} -\t{item.DisplayName}");
-            }
-        }
+        //    foreach (var kvp in items)
+        //    {
+        //        foreach (var item in kvp.Value)
+        //            _logger.LogInfo($"{kvp.Key}:\t{item.Index} -\t{item.Tier} -\t{item.DisplayName}");
+        //    }
+        //}
     }
 }

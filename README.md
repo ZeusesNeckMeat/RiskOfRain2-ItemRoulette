@@ -70,6 +70,10 @@ If you find any bugs, incompatibilities with other mods, or just general suggest
 	
 ## Changelog
 
+**2.1.1**
+* Sorted the Guaranteed Items section alphabetically to make it easier to find the items in the list
+* Refactored ConfigSettings into multiple files, each section getting its own file
+
 **2.1.0**
 * Added config settings for Guaranteed Items
 * Refactored the main file to break out the code into some, somewhat, more meaningful groups
