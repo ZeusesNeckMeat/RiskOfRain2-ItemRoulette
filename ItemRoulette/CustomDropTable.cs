@@ -1,4 +1,5 @@
 ﻿using BepInEx.Logging;
+using ItemRoulette.Configs;
 using RoR2;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,13 +24,13 @@ namespace ItemRoulette
 
         public void BuildDropTable()
         {
-            if (!_configSettings.IsModEnabled)
+            if (!_configSettings.GeneralSettings.IsModEnabled)
             {
                 _logger.LogInfo("Mod disabled. Not altering drop tables.");
                 return;
             }
 
-            var guaranteedPickupIndices = _configSettings.GetGuarnteedItemsDictionary();
+            var guaranteedPickupIndices = _configSettings.GuaranteedItemsSettings.GetGuarnteedItemsDictionary();
 
             _allUnlockedItemsByDefault[ItemTier.Tier1] = Run.instance.availableTier1DropList.ToList();
             _allUnlockedItemsByDefault[ItemTier.Tier2] = Run.instance.availableTier2DropList.ToList();
@@ -47,10 +48,10 @@ namespace ItemRoulette
             _logger.LogInfo("Loading initial information for AllItemsByType");
             var allItemsByTag = AllItemsByTag.Build(_logger)
                                              .UsingItemsForTags(tier1Through3Items)
-                                             .HavingTotalItemCount(_configSettings.TotalItemCountForTiers123)
-                                             .WithTotalAllowedDamageItemCount(_configSettings.PercentageOfDamageItems)
-                                             .WithTotalAllowedHealingItemCount(_configSettings.PercentageOfHealingItems)
-                                             .WithTotalAllowedUtilityItemCount(_configSettings.PercentageOfUtilityItems)
+                                             .HavingTotalItemCount(_configSettings.ItemTierCountSettings.TotalItemCountForTiers123)
+                                             .WithTotalAllowedDamageItemCount(_configSettings.ItemTagPercentsSettings.PercentageOfDamageItems)
+                                             .WithTotalAllowedHealingItemCount(_configSettings.ItemTagPercentsSettings.PercentageOfHealingItems)
+                                             .WithTotalAllowedUtilityItemCount(_configSettings.ItemTagPercentsSettings.PercentageOfUtilityItems)
                                              .WithItemsInTiers(_itemsInTiers)
                                              .Create();
 
@@ -60,7 +61,7 @@ namespace ItemRoulette
             _logger.LogInfo("Overwriting instance items with list of allowed items");
             foreach (var itemPoolForTier in _itemsInTiers)
             {
-                if (!_configSettings.ShouldOnlyUseGuaranteedItems
+                if (!_configSettings.GuaranteedItemsSettings.ShouldOnlyUseGuaranteedItems
                     || !guaranteedPickupIndices.ContainsKey(itemPoolForTier.Tier)
                     || !guaranteedPickupIndices[itemPoolForTier.Tier].Any())
                 {
@@ -75,7 +76,7 @@ namespace ItemRoulette
                 {
                     _logger.LogInfo("Adding guaranteed items to instance");
 
-                    if (_configSettings.ShouldOnlyUseGuaranteedItems)
+                    if (_configSettings.GuaranteedItemsSettings.ShouldOnlyUseGuaranteedItems)
                         itemPoolForTier.SetItemsInInstance(guaranteedPickupIndices[itemPoolForTier.Tier].ToList());
                     else
                         itemPoolForTier.ItemsInInstance.AddRange(guaranteedPickupIndices[itemPoolForTier.Tier].ToList());
@@ -131,31 +132,31 @@ namespace ItemRoulette
             var itemsInTier1 = ItemsInTiers.Build(_logger)
                                            .AsTier(ItemTier.Tier1)
                                            .HavingDefaultItems(Run.instance.availableTier1DropList)
-                                           .WithMaxItemsAllowed(_configSettings.Tier1ItemCount)
+                                           .WithMaxItemsAllowed(_configSettings.ItemTierCountSettings.Tier1ItemCount)
                                            .Create();
 
             var itemsInTier2 = ItemsInTiers.Build(_logger)
                                            .AsTier(ItemTier.Tier2)
                                            .HavingDefaultItems(Run.instance.availableTier2DropList)
-                                           .WithMaxItemsAllowed(_configSettings.Tier2ItemCount)
+                                           .WithMaxItemsAllowed(_configSettings.ItemTierCountSettings.Tier2ItemCount)
                                            .Create();
 
             var itemsInTier3 = ItemsInTiers.Build(_logger)
                                            .AsTier(ItemTier.Tier3)
                                            .HavingDefaultItems(Run.instance.availableTier3DropList)
-                                           .WithMaxItemsAllowed(_configSettings.Tier3ItemCount)
+                                           .WithMaxItemsAllowed(_configSettings.ItemTierCountSettings.Tier3ItemCount)
                                            .Create();
 
             var itemsInBoss = ItemsInTiers.Build(_logger)
                                           .AsTier(ItemTier.Boss)
                                           .HavingDefaultItems(Run.instance.availableBossDropList)
-                                          .WithMaxItemsAllowed(_configSettings.BossItemCount)
+                                          .WithMaxItemsAllowed(_configSettings.ItemTierCountSettings.BossItemCount)
                                           .Create();
 
             var itemsInLunar = ItemsInTiers.Build(_logger)
                                            .AsTier(ItemTier.Lunar)
                                            .HavingDefaultItems(Run.instance.availableLunarDropList)
-                                           .WithMaxItemsAllowed(_configSettings.LunarItemCount)
+                                           .WithMaxItemsAllowed(_configSettings.ItemTierCountSettings.LunarItemCount)
                                            .Create();
 
             _itemsInTiers.ForEach(item => item = null);
