@@ -11,7 +11,6 @@ namespace ItemRoulette.Configs
 {
     internal class GuaranteedItems : ConfigBase
     {
-        private readonly StringBuilder _stringBuilder = new StringBuilder();
         private readonly ManualLogSource _logger;
 
         private ConfigEntry<bool> _shouldOnlyUseGuaranteedItems;
@@ -28,6 +27,7 @@ namespace ItemRoulette.Configs
         private readonly List<PickupIndex> _lunarGuaranteedPickupIndices = new List<PickupIndex>();
 
         private static readonly IDictionary<ItemTier, ReadOnlyCollection<PickupIndex>> _guaranteedItemsByTier = new Dictionary<ItemTier, ReadOnlyCollection<PickupIndex>>();
+        private IReadOnlyDictionary<ItemTier, ReadOnlyCollection<ItemInfo>> _itemInfos;
 
         public GuaranteedItems(ConfigFile config, ManualLogSource logger) : base(config) 
         { 
@@ -35,20 +35,21 @@ namespace ItemRoulette.Configs
         }
 
         public override string SectionName => "Guaranteed Items";
-        public override string SectionDescription => "Place the number of the item in this field that you want to guarantee to be added to the item pool. Only one item allowed to be guaranteed. Available items {0}.";
+        public override string SectionDescription => "Place the numbers of the items in this field that you want to guarantee to be added to the item pool, with each number separated by a comma. Only one item allowed to be guaranteed. Available items {0}.";
 
         public bool ShouldOnlyUseGuaranteedItems => _shouldOnlyUseGuaranteedItems.Value;
 
         public override void Initialize()
         {
-            var itemInfosDictionary = ItemInfos.GetItemInfosDictionary();
+            _itemInfos = ItemInfos.GetItemInfosDictionary();
 
             _shouldOnlyUseGuaranteedItems = Bind(SectionName, "Should only use guaranteed items", false, "Set to true if you want to only use the items in the Guaranteed lists. Any values set to 0 will be ignored, and these tiers will be generated like normal");
-            _tier1GuaranteedItems = Bind("Tier 1 Guaranteed Items", 0.ToString(), GetConfigDescritionInfo(itemInfosDictionary[ItemTier.Tier1]));
-            _tier2GuaranteedItems = Bind("Tier 2 Guaranteed Items", 0.ToString(), GetConfigDescritionInfo(itemInfosDictionary[ItemTier.Tier2]));
-            _tier3GuaranteedItems = Bind("Tier 3 Guaranteed Items", 0.ToString(), GetConfigDescritionInfo(itemInfosDictionary[ItemTier.Tier3]));
-            _bossGuaranteedItems = Bind("Boss Guaranteed Items", 0.ToString(), GetConfigDescritionInfo(itemInfosDictionary[ItemTier.Boss]));
-            _lunarGuaranteedItems = Bind("Lunar Guaranteed Items", 0.ToString(), GetConfigDescritionInfo(itemInfosDictionary[ItemTier.Lunar]));
+
+            _tier1GuaranteedItems = Bind("Tier 1 Guaranteed Items", 0.ToString(), GetItemsWithNumbersDescription(_itemInfos[ItemTier.Tier1]));
+            _tier2GuaranteedItems = Bind("Tier 2 Guaranteed Items", 0.ToString(), GetItemsWithNumbersDescription(_itemInfos[ItemTier.Tier2]));
+            _tier3GuaranteedItems = Bind("Tier 3 Guaranteed Items", 0.ToString(), GetItemsWithNumbersDescription(_itemInfos[ItemTier.Tier3]));
+            _bossGuaranteedItems = Bind("Boss Guaranteed Items", 0.ToString(), GetItemsWithNumbersDescription(_itemInfos[ItemTier.Boss]));
+            _lunarGuaranteedItems = Bind("Lunar Guaranteed Items", 0.ToString(), GetItemsWithNumbersDescription(_itemInfos[ItemTier.Lunar]));
 
             VerifyValidityOfGuaranteedItems();
         }
@@ -58,30 +59,18 @@ namespace ItemRoulette.Configs
             return new Dictionary<ItemTier, ReadOnlyCollection<PickupIndex>>(_guaranteedItemsByTier);
         }
 
-        private (string, AcceptableValueList<string>) GetConfigDescritionInfo(IReadOnlyCollection<ItemInfo> itemInfos)
-        {
-            return (GetItemsWithNumbersDescription(itemInfos), GetAcceptableValues(itemInfos));
-        }
-
         private string GetItemsWithNumbersDescription(IReadOnlyCollection<ItemInfo> itemInfos)
         {
             var itemsWithNumbers = itemInfos.OrderBy(x => x.DisplayName).Select(item => $"{item.IndexNumber}: {item.DisplayName}").ToList();
-            itemsWithNumbers.Insert(0, 0.ToString());
+            itemsWithNumbers.Insert(0, "0: Default - No guaranteed item");
 
             return string.Join(", ", itemsWithNumbers);
         }
 
-        private AcceptableValueList<string> GetAcceptableValues(IReadOnlyCollection<ItemInfo> itemInfos)
-        {
-            var allowedIndices = itemInfos.Select(x => x.IndexNumber.ToString()).ToList();
-            allowedIndices.Insert(0, "0");
-
-            return new AcceptableValueList<string>(allowedIndices.ToArray());
-        }        
-
         private void VerifyValidityOfGuaranteedItems()
         {
-            _stringBuilder.Clear();
+            var stringBuilder = new StringBuilder();
+
             _tier1GuaranteedPickupIndices.Clear();
             _tier2GuaranteedPickupIndices.Clear();
             _tier3GuaranteedPickupIndices.Clear();
@@ -100,16 +89,18 @@ namespace ItemRoulette.Configs
 
             if (invalidConfigValues.Any())
             {
-                _stringBuilder.Append("Some Guaranteed Items config values were invalid: ");
+                stringBuilder.Append("Some Guaranteed Items config values were invalid: ");
 
                 foreach (var invalidConfigValue in invalidConfigValues)
-                    _stringBuilder.Append(invalidConfigValue);
+                    stringBuilder.AppendLine(invalidConfigValue);
+
+                _logger.LogInfo(stringBuilder.ToString());
             }
         }
 
         private void AddGuaranteedItems(string guaranteedItemsString, ItemTier itemTier, List<string> invalidConfigValues, IEnumerable<ItemInfo> itemInfos, List<PickupIndex> guaranteedPickupIndices)
         {
-            foreach (var itemIndexString in guaranteedItemsString.Split(','))
+            foreach (var itemIndexString in guaranteedItemsString.Split(',').Select(x => x.Trim()))
             {
                 if (!Enum.TryParse<ItemIndex>(itemIndexString, out var itemIndex))
                 {
@@ -118,7 +109,16 @@ namespace ItemRoulette.Configs
                     continue;
                 }
 
-                //_logger.LogInfo($"Guaranteed item should add: {itemIndex}");
+                if (itemIndex == 0)
+                    continue;
+
+                if (!_itemInfos[itemTier].Any(itemInfo => itemInfo.Index == itemIndex))
+                {
+                    _logger.LogInfo($"Item {itemIndex} not valid for {itemTier}");
+                    invalidConfigValues.Add(itemIndexString);
+                    continue;
+                }
+
                 if (itemInfos.Any(x => x.Index == itemIndex))
                 {
                     var pickupIndex = PickupCatalog.FindPickupIndex(itemIndex);
