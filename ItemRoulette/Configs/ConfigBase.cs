@@ -26,19 +26,9 @@ namespace ItemRoulette.Configs
             return _config.Bind(section, key, defaultValue, description);
         }
 
-        public ConfigEntry<T> Bind<T>(string key, T defaultValue, (string descriptionExtraThing, AcceptableValueBase acceptableValues) configDescription)
-        {
-            return _config.Bind(SectionName, key, defaultValue, GetConfigDescription(string.Format(SectionDescription, configDescription.descriptionExtraThing), configDescription.acceptableValues));
-        }
-
         public void Reload()
         {
             _config.Reload();
-        }
-
-        private ConfigDescription GetConfigDescription(string description, AcceptableValueBase acceptableValues = null)
-        {
-            return new ConfigDescription(description, acceptableValues);
         }
     }
 }

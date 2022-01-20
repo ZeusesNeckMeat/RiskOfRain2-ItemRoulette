@@ -104,20 +104,7 @@ namespace ItemRoulette.Hooks
         private void GenerateItemLists()
         {
             ItemInfos.GenerateItemLists();
-            //LogItems();
-
             _configSettings.InitializeConfigFile();
         }
-
-        //private void LogItems()
-        //{
-        //    var items = ItemInfos.GetItemInfosDictionary();
-
-        //    foreach (var kvp in items)
-        //    {
-        //        foreach (var item in kvp.Value)
-        //            _logger.LogInfo($"{kvp.Key}:\t{item.Index} -\t{item.Tier} -\t{item.DisplayName}");
-        //    }
-        //}
     }
 }

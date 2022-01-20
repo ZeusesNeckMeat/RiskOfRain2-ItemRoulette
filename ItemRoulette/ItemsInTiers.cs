@@ -128,6 +128,7 @@ namespace ItemRoulette
 
             return !_forbiddenTags.Any(x => itemDef.ContainsTag(x));
         }
+
         public static IAsTier Build(ManualLogSource logger) => new ItemsInTiers(logger);
         public IHavingDefaultItems AsTier(ItemTier itemTier)
         {
