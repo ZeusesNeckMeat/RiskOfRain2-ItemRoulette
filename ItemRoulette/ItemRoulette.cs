@@ -12,29 +12,29 @@ namespace ItemRoulette
 {
     [BepInDependency("com.bepis.r2api", BepInDependency.DependencyFlags.HardDependency)]
     [BepInProcess("Risk of Rain 2.exe")]
-    [BepInPlugin("com.zeusesneckmeat.itemroulette", "ItemRoulette", "2.1.0.0")]
+    [BepInPlugin("com.zeusesneckmeat.itemroulette", "ItemRoulette", "2.3.0.0")]
     public class ItemRoulette : BaseUnityPlugin
     {
         private ConfigSettings _configSettings;
-
-        private CustomHooks.Run _run;
 
         public void Awake()
         {
             _configSettings = new ConfigSettings(Config, Logger);
 
+            var hookStateTracker = new CustomHooks.HookStateTracker();
             var customDropTable = new CustomDropTable(Logger, _configSettings);
-            _run = new CustomHooks.Run(Logger, _configSettings, customDropTable);
+            var run = new CustomHooks.Run(Logger, _configSettings, customDropTable, hookStateTracker);
+            var catalogs = new CustomHooks.Catalogs(_configSettings, hookStateTracker);
 
             Hook.ArenaMissionController.OnStartServer += customDropTable.OnArenaStartServer;
             Hook.Console.Awake += (orig, self) => orig(self);
-            Hook.ItemCatalog.Init += _run.OnItemCatalogInit;
-            Hook.PickupCatalog.Init += _run.OnPickupCatalogInit;
-            Hook.Run.BeginStage += _run.OnBeginStage;
-            Hook.Run.BuildDropTable += _run.OnBuildDropTable;
-            Hook.Run.OnDestroy += _run.OnRunDestroy;
+            Hook.ItemCatalog.Init += catalogs.OnItemCatalogInit;
+            Hook.PickupCatalog.Init += catalogs.OnPickupCatalogInit;
+            Hook.Run.BeginStage += run.OnBeginStage;
+            Hook.Run.BuildDropTable += run.OnBuildDropTable;
+            Hook.Run.OnDestroy += run.OnRunDestroy;
 
-            MonsterTeamGainsItemsArtifactManager.GenerateAvailableItemsSet += _run.OnGenerateAvailableItemsSet;
+            MonsterTeamGainsItemsArtifactManager.GenerateAvailableItemsSet += run.OnGenerateAvailableItemsSet;
         }
 
         void Update()

@@ -53,7 +53,7 @@ These options should provide a little more variety for longer runs, if wanted. E
 
 There is a new section in the config file called `Guaranteed Items`. This section will show you all of the items generated for each tier with a number next to them. You can specify any number of items per tier, and you would place the numbers of that items into the config setting. These items will be added as "extra" items to that tier. So if you specify 5 items for `Tier 1` and you have `Paul's Goat Hoof` as your guaranteed item, then `Tier 1` will have 6 total items.
 
-Along with being able to set guaranteed items per tier, there is also a setting for whether or not you want the items you've set as guaranteed to be the ***only*** items in that tier. So for whatever reason if you want to have `Soldier's Syringe` as your only `Tier 1` item, then you would add it's number to the appropriate setting, and set `Should only use guaranteed items` to `true`. This will ignore your `Tier 1` settings while you have both `Should only use guaranteed items` set to `true` and any item numbers in any of the settings in this section.
+Along with being able to set guaranteed items per tier, there is also a setting for whether or not you want the items you've set as guaranteed to be the ***only*** items in that tier. So for whatever reason if you want to have `Soldier's Syringe` as your only `Tier 1` item, then you would add it's number to the appropriate setting, and set `Should only use guaranteed items for Tier 1` to `true`. This will ignore your `Tier 1` settings while you have both `Should only use guaranteed items for Tier 1` set to `true` and any item numbers in the `Tier 1 Guaranteed Items` section of the settings in this section. Each Tier has its own setting for "Should Use" and "Guaranteed Items"
 
 To add multiple items for each tier you would enter each number of the item in the appropriate section, separated by just a comma. For example, if you want `1: Soldier's Syringe` and `2: Paul's Goat Hoof` as your items you would enter `1,2` as your values for the `Tier 1` items. These numbers for these items are just examples and not the real values. (The "real" values can also change with mods that install more items as well) 
 
@@ -71,6 +71,12 @@ The above updates aren't exactly small, but I will try to work on them when I ha
 If you find any bugs, incompatibilities with other mods, or just general suggestions please feel free to add them to the [Issues section](https://github.com/ZeusesNeckMeat/RiskOfRain2-ItemRoulette/issues) in Github!
 	
 ## Changelog
+
+**2.3.0**
+* Refactored the custom hooks to split some into separate files that made more sense
+* Added a new CustomHookTracker class to track the state of the game to be used by each custom hooks
+* Added SectionKey as a virtual property on ConfigBase to more easily expand upon adding new configs with keys
+* Added a new set of configs to be able to control whether or not you want to use only the guaranteed items at a specific tier level, so each tier can be controlled separately
 
 **2.2.0**
 * Updated Guaranteed Items config to allow multiple items through a comma delimited list

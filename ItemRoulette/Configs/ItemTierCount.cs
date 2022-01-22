@@ -13,6 +13,7 @@ namespace ItemRoulette.Configs
         public ItemTierCount(ConfigFile configFile) : base(configFile) { }
 
         public override string SectionName => "New Total Item Counts";
+        public override string SectionKey => "{0} New Count";
         public override string SectionDescription => "This is number of items that will be available for {0}. The items in the run will be pulled at random from all unlocked items in this tier. Set to 0 to have all unlocked items in the run.";
         
         public int TotalItemCountForTiers123 => Tier1ItemCount + Tier2ItemCount + Tier3ItemCount;
@@ -24,11 +25,11 @@ namespace ItemRoulette.Configs
 
         public override void Initialize()
         {
-            _tier1ItemCount = Bind("Tier1NewCount", 5, "Tier1 items");
-            _tier2ItemCount = Bind("Tier2NewCount", 3, "Tier2 items");
-            _tier3ItemCount = Bind("Tier3NewCount", 1, "Tier3 items");
-            _bossItemCount = Bind("BossNewCount", 0, "Boss items");
-            _lunarItemCount = Bind("LunarNewCount", 0, "Lunar items");
+            _tier1ItemCount = Bind("Tier 1", 5, "Tier1 items");
+            _tier2ItemCount = Bind("Tier 2", 3, "Tier2 items");
+            _tier3ItemCount = Bind("Tier 3", 1, "Tier3 items");
+            _bossItemCount = Bind("Boss", 0, "Boss items");
+            _lunarItemCount = Bind("Lunar", 0, "Lunar items");
         }
     }
 }
