@@ -30,8 +30,6 @@ namespace ItemRoulette
                 return;
             }
 
-            var guaranteedPickupIndices = _configSettings.GuaranteedItemsSettings.GetGuarnteedItemsDictionary();
-
             _allUnlockedItemsByDefault[ItemTier.Tier1] = Run.instance.availableTier1DropList.ToList();
             _allUnlockedItemsByDefault[ItemTier.Tier2] = Run.instance.availableTier2DropList.ToList();
             _allUnlockedItemsByDefault[ItemTier.Tier3] = Run.instance.availableTier3DropList.ToList();
@@ -59,27 +57,25 @@ namespace ItemRoulette
             _itemsInTiers = allItemsByTag.GetItemPoolForTiers();
 
             _logger.LogInfo("Overwriting instance items with list of allowed items");
-            foreach (var itemPoolForTier in _itemsInTiers)
+
+            var guaranteedItemsSettings = _configSettings.GuaranteedItemsSettings.GetGuaranteedItemSettings();
+            foreach (var (itemTier, shouldUseOnlyGuaranteedItems, guaranteedItems) in guaranteedItemsSettings)
             {
-                if (!_configSettings.GuaranteedItemsSettings.ShouldOnlyUseGuaranteedItems
-                    || !guaranteedPickupIndices.ContainsKey(itemPoolForTier.Tier)
-                    || !guaranteedPickupIndices[itemPoolForTier.Tier].Any())
+                var itemPoolForTier = _itemsInTiers.First(itemsInTier => itemsInTier.Tier == itemTier);
+
+                _logger.LogInfo($"{itemTier}: Should only use guaranteed: {shouldUseOnlyGuaranteedItems}. Total guaranteed items: {guaranteedItems?.Count()}");
+                if (guaranteedItems == null || !guaranteedItems.Any())
                 {
                     itemPoolForTier.SetItemsInInstance();
+                    continue;
                 }
 
-                _logger.LogInfo($"Item count for guaranteed items: {guaranteedPickupIndices.Count()}");
-                _logger.LogInfo($"Guaranteed Items: {string.Join(" - ", guaranteedPickupIndices.SelectMany(x => x.Value))}");
-                if (guaranteedPickupIndices.Any()
-                    && guaranteedPickupIndices.ContainsKey(itemPoolForTier.Tier)
-                    && guaranteedPickupIndices[itemPoolForTier.Tier].Any())
+                if (shouldUseOnlyGuaranteedItems)
+                    itemPoolForTier.SetItemsInInstance(guaranteedItems.ToList());
+                else
                 {
-                    _logger.LogInfo("Adding guaranteed items to instance");
-
-                    if (_configSettings.GuaranteedItemsSettings.ShouldOnlyUseGuaranteedItems)
-                        itemPoolForTier.SetItemsInInstance(guaranteedPickupIndices[itemPoolForTier.Tier].ToList());
-                    else
-                        itemPoolForTier.ItemsInInstance.AddRange(guaranteedPickupIndices[itemPoolForTier.Tier].ToList());
+                    itemPoolForTier.SetItemsInInstance();
+                    itemPoolForTier.ItemsInInstance.AddRange(guaranteedItems);
                 }
             }
         }

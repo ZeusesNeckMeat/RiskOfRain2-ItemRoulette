@@ -16,7 +16,7 @@ namespace ItemRoulette.Configs
             GeneralSettings = new General(config);
             ItemTierCountSettings = new ItemTierCount(config);
             ItemTagPercentsSettings = new ItemTagPercents(config);
-            GuaranteedItemsSettings = new GuaranteedItems(config, logger);
+            GuaranteedItemsSettings = new GuaranteedItemsCombined(config, logger);
 
             _configs.Add(GeneralSettings);
             _configs.Add(ItemTierCountSettings);
@@ -27,7 +27,7 @@ namespace ItemRoulette.Configs
         internal General GeneralSettings { get; private set; }
         internal ItemTierCount ItemTierCountSettings { get; private set; }
         internal ItemTagPercents ItemTagPercentsSettings { get; private set; }
-        internal GuaranteedItems GuaranteedItemsSettings { get; private set; }
+        internal GuaranteedItemsCombined GuaranteedItemsSettings { get; private set; }
 
         public void InitializeConfigFile(bool shouldReloadConfig = false)
         {

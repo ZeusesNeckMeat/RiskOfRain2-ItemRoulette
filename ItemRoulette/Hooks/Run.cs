@@ -12,19 +12,14 @@ namespace ItemRoulette.Hooks
         private readonly ManualLogSource _logger;
         private readonly ConfigSettings _configSettings;
         private readonly CustomDropTable _customDropTable;
+        private readonly HookStateTracker _hookStateTracker;
 
-        private bool _isBuildDropTableDone = false;
-        private bool _isMonsterGenerateAvailableItemsSetDone = false;
-        private bool _isItemCatalogInitDone = false;
-        private bool _isPickupCatalogInitDone = false;
-
-        private int _currentLoopCount = 0;
-
-        public Run(ManualLogSource logger, ConfigSettings configSettings, CustomDropTable customDropTable)
+        public Run(ManualLogSource logger, ConfigSettings configSettings, CustomDropTable customDropTable, HookStateTracker hookStateTracker)
         {
             _logger = logger;
             _configSettings = configSettings;
             _customDropTable = customDropTable;
+            _hookStateTracker = hookStateTracker;
         }
 
         public void OnBuildDropTable(Hook.Run.orig_BuildDropTable orig, RoR2Run self)
@@ -33,9 +28,9 @@ namespace ItemRoulette.Hooks
             _logger.LogInfo("Building full drop table before changing items");
             orig(self);
 
-            _isBuildDropTableDone = true;
+            _hookStateTracker.IsBuildDropTableDone = true;
 
-            if (_isBuildDropTableDone && _isMonsterGenerateAvailableItemsSetDone)
+            if (_hookStateTracker.IsBuildDropTableDone && _hookStateTracker.IsMonsterGenerateAvailableItemsSetDone)
                 _customDropTable.BuildDropTable();
         }
 
@@ -46,9 +41,9 @@ namespace ItemRoulette.Hooks
             if (RoR2Run.instance.stageClearCount == 0)
                 return;
 
-            var newLoopStarted = RoR2Run.instance.loopClearCount > _currentLoopCount;
+            var newLoopStarted = RoR2Run.instance.loopClearCount > _hookStateTracker.CurrentLoopCount;
             if (newLoopStarted)
-                _currentLoopCount = RoR2Run.instance.loopClearCount;
+                _hookStateTracker.CurrentLoopCount = RoR2Run.instance.loopClearCount;
 
             var shouldRefreshItemPool = _configSettings.GeneralSettings.ItemRefreshOptions == ItemRefreshOptions.EachStage
                                         || (_configSettings.GeneralSettings.ItemRefreshOptions == ItemRefreshOptions.EachLoop && newLoopStarted);
@@ -63,11 +58,11 @@ namespace ItemRoulette.Hooks
         public void OnRunDestroy(Hook.Run.orig_OnDestroy orig, RoR2Run self)
         {
             _logger.LogInfo("Run Over. Cleaning up.");
-            _isItemCatalogInitDone = false;
-            _isPickupCatalogInitDone = false;
-            _isMonsterGenerateAvailableItemsSetDone = false;
-            _isBuildDropTableDone = false;
-            _currentLoopCount = 0;
+            _hookStateTracker.IsItemCatalogInitDone = false;
+            _hookStateTracker.IsPickupCatalogInitDone = false;
+            _hookStateTracker.IsMonsterGenerateAvailableItemsSetDone = false;
+            _hookStateTracker.IsBuildDropTableDone = false;
+            _hookStateTracker.CurrentLoopCount = 0;
 
             _configSettings.RefreshConfigSettings();
 
@@ -77,34 +72,10 @@ namespace ItemRoulette.Hooks
         public void OnGenerateAvailableItemsSet(MonsterTeamGainsItemsArtifactManager.orig_GenerateAvailableItemsSet orig)
         {
             orig();
-            _isMonsterGenerateAvailableItemsSetDone = true;
+            _hookStateTracker.IsMonsterGenerateAvailableItemsSetDone = true;
 
-            if (_isBuildDropTableDone && _isMonsterGenerateAvailableItemsSetDone)
+            if (_hookStateTracker.IsBuildDropTableDone && _hookStateTracker.IsMonsterGenerateAvailableItemsSetDone)
                 _customDropTable.BuildDropTable();
-        }
-
-        public void OnItemCatalogInit(Hook.ItemCatalog.orig_Init orig)
-        {
-            orig();
-            _isItemCatalogInitDone = true;
-
-            if (_isItemCatalogInitDone && _isPickupCatalogInitDone)
-                GenerateItemLists();
-        }
-
-        public void OnPickupCatalogInit(Hook.PickupCatalog.orig_Init orig)
-        {
-            orig();
-            _isPickupCatalogInitDone = true;
-
-            if (_isItemCatalogInitDone && _isPickupCatalogInitDone)
-                GenerateItemLists();
-        }
-
-        private void GenerateItemLists()
-        {
-            ItemInfos.GenerateItemLists();
-            _configSettings.InitializeConfigFile();
         }
     }
 }

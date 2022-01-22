@@ -17,6 +17,7 @@ namespace ItemRoulette.Configs
         public ItemTagPercents(ConfigFile config) : base(config) { }
 
         public override string SectionName => "Item Tag Percents";
+        public override string SectionKey => "{0} Type Percentage";
         public override string SectionDescription => "Determines what percent of total items available between Tiers 1, 2, and 3 will be of the {0} type. 0 means no items of that type";
 
         public double TotalPercentageOfItems => PercentageOfDamageItems + PercentageOfHealingItems + PercentageOfUtilityItems;
@@ -26,9 +27,9 @@ namespace ItemRoulette.Configs
 
         public override void Initialize()
         {
-            _percentageOfDamageItems = Bind("DamageTypePercentage", 33d, "Damage");
-            _percentageOfUtilityItems = Bind("UtilityTypePercentage", 33d, "Utility");
-            _percentageOfHealingItems = Bind("HealingTypePercentage", 33d, "Healing");
+            _percentageOfDamageItems = Bind("Damage", 33d, "Damage");
+            _percentageOfUtilityItems = Bind("Utility", 33d, "Utility");
+            _percentageOfHealingItems = Bind("Healing", 33d, "Healing");
 
             _percentagesOfItems.Clear();
             _percentagesOfItems.Add(_percentageOfDamageItems);

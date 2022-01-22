@@ -9,11 +9,13 @@ using System.Text;
 
 namespace ItemRoulette.Configs
 {
-    internal class GuaranteedItems : ConfigBase
+    internal class GuaranteedItems
     {
+        private const string SECTION_KEY = "{0} Guaranteed Items";
+        private const string SECTION_DESCRIPTION = "Place the numbers of the items in this field that you want to guarantee to be added to the item pool, with each number separated by a comma. Only one item allowed to be guaranteed. Available items {0}.";
+
         private readonly ManualLogSource _logger;
 
-        private ConfigEntry<bool> _shouldOnlyUseGuaranteedItems;
         private ConfigEntry<string> _tier1GuaranteedItems;
         private ConfigEntry<string> _tier2GuaranteedItems;
         private ConfigEntry<string> _tier3GuaranteedItems;
@@ -29,34 +31,37 @@ namespace ItemRoulette.Configs
         private static readonly IDictionary<ItemTier, ReadOnlyCollection<PickupIndex>> _guaranteedItemsByTier = new Dictionary<ItemTier, ReadOnlyCollection<PickupIndex>>();
         private IReadOnlyDictionary<ItemTier, ReadOnlyCollection<ItemInfo>> _itemInfos;
 
-        public GuaranteedItems(ConfigFile config, ManualLogSource logger) : base(config) 
-        { 
+        public GuaranteedItems(ManualLogSource logger)
+        {
             _logger = logger;
         }
 
-        public override string SectionName => "Guaranteed Items";
-        public override string SectionDescription => "Place the numbers of the items in this field that you want to guarantee to be added to the item pool, with each number separated by a comma. Only one item allowed to be guaranteed. Available items {0}.";
-
-        public bool ShouldOnlyUseGuaranteedItems => _shouldOnlyUseGuaranteedItems.Value;
-
-        public override void Initialize()
+        public void Initialize(Func<string, string, string, ConfigEntry<string>> bind)
         {
             _itemInfos = ItemInfos.GetItemInfosDictionary();
 
-            _shouldOnlyUseGuaranteedItems = Bind(SectionName, "Should only use guaranteed items", false, "Set to true if you want to only use the items in the Guaranteed lists. Any values set to 0 will be ignored, and these tiers will be generated like normal");
-
-            _tier1GuaranteedItems = Bind("Tier 1 Guaranteed Items", 0.ToString(), GetItemsWithNumbersDescription(_itemInfos[ItemTier.Tier1]));
-            _tier2GuaranteedItems = Bind("Tier 2 Guaranteed Items", 0.ToString(), GetItemsWithNumbersDescription(_itemInfos[ItemTier.Tier2]));
-            _tier3GuaranteedItems = Bind("Tier 3 Guaranteed Items", 0.ToString(), GetItemsWithNumbersDescription(_itemInfos[ItemTier.Tier3]));
-            _bossGuaranteedItems = Bind("Boss Guaranteed Items", 0.ToString(), GetItemsWithNumbersDescription(_itemInfos[ItemTier.Boss]));
-            _lunarGuaranteedItems = Bind("Lunar Guaranteed Items", 0.ToString(), GetItemsWithNumbersDescription(_itemInfos[ItemTier.Lunar]));
+            _tier1GuaranteedItems = GetConfigValueOrDefault("Tier 1", _itemInfos[ItemTier.Tier1], bind);
+            _tier2GuaranteedItems = GetConfigValueOrDefault("Tier 2", _itemInfos[ItemTier.Tier2], bind);
+            _tier3GuaranteedItems = GetConfigValueOrDefault("Tier 3", _itemInfos[ItemTier.Tier3], bind);
+            _bossGuaranteedItems = GetConfigValueOrDefault("Boss", _itemInfos[ItemTier.Boss], bind);
+            _lunarGuaranteedItems = GetConfigValueOrDefault("Lunar", _itemInfos[ItemTier.Lunar], bind);
 
             VerifyValidityOfGuaranteedItems();
         }
 
-        public IDictionary<ItemTier, ReadOnlyCollection<PickupIndex>> GetGuarnteedItemsDictionary()
+        public IDictionary<ItemTier, ReadOnlyCollection<PickupIndex>> GetGuaranteedItemsDictionary()
         {
             return new Dictionary<ItemTier, ReadOnlyCollection<PickupIndex>>(_guaranteedItemsByTier);
+        }
+
+        private ConfigEntry<string> GetConfigValueOrDefault(string keyExtra, IReadOnlyCollection<ItemInfo> itemInfos, Func<string, string, string, ConfigEntry<string>> bind)
+        {
+            var configEntry = bind(string.Format(SECTION_KEY, keyExtra), 0.ToString(), GetItemsWithNumbersDescription(itemInfos));
+
+            if (string.IsNullOrWhiteSpace(configEntry.Value))
+                configEntry.Value = 0.ToString();
+
+            return configEntry;
         }
 
         private string GetItemsWithNumbersDescription(IReadOnlyCollection<ItemInfo> itemInfos)
@@ -64,7 +69,7 @@ namespace ItemRoulette.Configs
             var itemsWithNumbers = itemInfos.OrderBy(x => x.DisplayName).Select(item => $"{item.IndexNumber}: {item.DisplayName}").ToList();
             itemsWithNumbers.Insert(0, "0: Default - No guaranteed item");
 
-            return string.Join(", ", itemsWithNumbers);
+            return string.Format(SECTION_DESCRIPTION, string.Join(", ", itemsWithNumbers));
         }
 
         private void VerifyValidityOfGuaranteedItems()
@@ -102,6 +107,9 @@ namespace ItemRoulette.Configs
         {
             foreach (var itemIndexString in guaranteedItemsString.Split(',').Select(x => x.Trim()))
             {
+                if (string.IsNullOrWhiteSpace(itemIndexString))
+                    continue;
+
                 if (!Enum.TryParse<ItemIndex>(itemIndexString, out var itemIndex))
                 {
                     _logger.LogInfo($"Invalid item: {itemIndexString}");

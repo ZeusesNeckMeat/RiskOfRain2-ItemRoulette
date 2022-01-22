@@ -12,13 +12,14 @@ namespace ItemRoulette.Configs
         }
 
         public abstract string SectionName { get; }
+        public virtual string SectionKey => "{0}";
         public virtual string SectionDescription => "{0}";
 
         public abstract void Initialize();
 
-        public ConfigEntry<T> Bind<T>(string key, T defaultValue, string descriptionExtraThing)
+        public ConfigEntry<T> Bind<T>(string keyExtraThing, T defaultValue, string descriptionExtraThing)
         {
-            return Bind(SectionName, key, defaultValue, string.Format(SectionDescription, descriptionExtraThing));
+            return Bind(SectionName, string.Format(SectionKey, keyExtraThing), defaultValue, string.Format(SectionDescription, descriptionExtraThing));
         }
 
         public ConfigEntry<T> Bind<T>(string section, string key, T defaultValue, string description)
