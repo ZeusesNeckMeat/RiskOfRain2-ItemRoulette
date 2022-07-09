@@ -10,9 +10,8 @@ using Hook = On.RoR2;
 
 namespace ItemRoulette
 {
-    [BepInDependency("com.bepis.r2api", BepInDependency.DependencyFlags.HardDependency)]
     [BepInProcess("Risk of Rain 2.exe")]
-    [BepInPlugin("com.zeusesneckmeat.itemroulette", "ItemRoulette", "2.3.0.0")]
+    [BepInPlugin("com.zeusesneckmeat.itemroulette", "ItemRoulette", "3.0.0")]
     public class ItemRoulette : BaseUnityPlugin
     {
         private ConfigSettings _configSettings;
@@ -26,15 +25,15 @@ namespace ItemRoulette
             var run = new CustomHooks.Run(Logger, _configSettings, customDropTable, hookStateTracker);
             var catalogs = new CustomHooks.Catalogs(_configSettings, hookStateTracker);
 
-            Hook.ArenaMissionController.OnStartServer += customDropTable.OnArenaStartServer;
+            Hook.ArenaMonsterItemDropTable.GenerateWeightedSelection += customDropTable.GenerateWeightedSelectionArena;
             Hook.Console.Awake += (orig, self) => orig(self);
             Hook.ItemCatalog.Init += catalogs.OnItemCatalogInit;
             Hook.PickupCatalog.Init += catalogs.OnPickupCatalogInit;
             Hook.Run.BeginStage += run.OnBeginStage;
-            Hook.Run.BuildDropTable += run.OnBuildDropTable;
+            Hook.BasicPickupDropTable.GenerateWeightedSelection += run.GenerateWeightedSelection;
             Hook.Run.OnDestroy += run.OnRunDestroy;
 
-            MonsterTeamGainsItemsArtifactManager.GenerateAvailableItemsSet += run.OnGenerateAvailableItemsSet;
+            MonsterTeamGainsItemsArtifactManager.OnRunStartGlobal += run.OnGenerateAvailableItemsSet;
         }
 
         void Update()
@@ -51,7 +50,10 @@ namespace ItemRoulette
                 LogItemsInDropTable(ItemTier.Tier2, Run.instance.availableTier2DropList);
                 LogItemsInDropTable(ItemTier.Tier3, Run.instance.availableTier3DropList);
                 LogItemsInDropTable(ItemTier.Boss, Run.instance.availableBossDropList);
-                LogItemsInDropTable(ItemTier.Lunar, Run.instance.availableLunarDropList);
+                LogItemsInDropTable(ItemTier.Lunar, Run.instance.availableLunarItemDropList);
+                LogItemsInDropTable(ItemTier.VoidTier1, Run.instance.availableVoidTier1DropList);
+                LogItemsInDropTable(ItemTier.VoidTier2, Run.instance.availableVoidTier2DropList);
+                LogItemsInDropTable(ItemTier.VoidTier3, Run.instance.availableVoidTier3DropList);
             }
         }
 

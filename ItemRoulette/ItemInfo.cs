@@ -1,6 +1,7 @@
 ﻿using RoR2;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace ItemRoulette
 {
@@ -31,6 +32,7 @@ namespace ItemRoulette
         public static void GenerateItemLists()
         {
             var itemInfosByTiers = new Dictionary<ItemTier, List<ItemInfo>>();
+            var itemTierDefs = ItemTierCatalog.allItemTierDefs.ToList();
 
             foreach (var itemIndex in ItemCatalog.allItems)
             {
@@ -39,8 +41,8 @@ namespace ItemRoulette
                     continue;
 
                 var itemDef = GetItemDef(itemIndex);
-
-                if (!itemDef.inDroppableTier)
+                                
+                if (!itemTierDefs.FirstOrDefault(x => x.tier == itemDef.tier)?.isDroppable ?? false)
                     continue;
 
                 var itemInfo = new ItemInfo(itemDef.tier, itemIndex, Language.GetString(displayName));

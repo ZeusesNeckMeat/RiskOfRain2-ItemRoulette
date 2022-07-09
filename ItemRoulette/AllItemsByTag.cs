@@ -124,41 +124,32 @@ namespace ItemRoulette
 
         public IWithTotalAllowedHealingItemCount WithTotalAllowedDamageItemCount(double percentageOfDamageItems)
         {
-            var roundedCount = GetRoundedCount(percentageOfDamageItems);
-
-            if (roundedCount < 0)
-                roundedCount = _itemsByTagAndTier.Where(x => x.Tags.Contains(ItemTag.Damage)).Count();
-
-            _minItemsAllowedForTag[ItemTag.Damage] = roundedCount;
-            _currentCountOfItemsForTag[ItemTag.Damage] = 0;
-            _logger.LogInfo($"Min Allowed for {ItemTag.Damage}: {roundedCount}");
+            SetAllowedItemCount(percentageOfDamageItems, ItemTag.Damage);
             return this;
         }
 
         public IWithTotalAllowedUtilityItemCount WithTotalAllowedHealingItemCount(double percentageOfHealingItems)
         {
-            var roundedCount = GetRoundedCount(percentageOfHealingItems);
-
-            if (roundedCount < 0)
-                roundedCount = _itemsByTagAndTier.Where(x => x.Tags.Contains(ItemTag.Healing)).Count();
-
-            _minItemsAllowedForTag[ItemTag.Healing] = roundedCount;
-            _currentCountOfItemsForTag[ItemTag.Healing] = 0;
-            _logger.LogInfo($"Min Allowed for {ItemTag.Healing}: {roundedCount}");
+            SetAllowedItemCount(percentageOfHealingItems, ItemTag.Healing);
             return this;
         }
 
         public IWithItemsInTiers WithTotalAllowedUtilityItemCount(double percentageOfUtilityItems)
         {
-            var roundedCount = GetRoundedCount(percentageOfUtilityItems);
+            SetAllowedItemCount(percentageOfUtilityItems, ItemTag.Utility);
+            return this;
+        }
+
+        private void SetAllowedItemCount(double percentage, ItemTag itemTag)
+        {
+            var roundedCount = GetRoundedCount(percentage);
 
             if (roundedCount < 0)
-                roundedCount = _itemsByTagAndTier.Where(x => x.Tags.Contains(ItemTag.Utility)).Count();
+                roundedCount = _itemsByTagAndTier.Where(x => x.Tags.Contains(itemTag)).Count();
 
-            _minItemsAllowedForTag[ItemTag.Utility] = roundedCount;
-            _currentCountOfItemsForTag[ItemTag.Utility] = 0;
-            _logger.LogInfo($"Min Allowed for {ItemTag.Utility}: {roundedCount}");
-            return this;
+            _minItemsAllowedForTag[itemTag] = roundedCount;
+            _currentCountOfItemsForTag[itemTag] = 0;
+            _logger.LogInfo($"Min Allowed for {itemTag}: {roundedCount}");
         }
 
         public IAllItemsByTagCreator WithItemsInTiers(List<IItemsInTier> itemsInTiers)

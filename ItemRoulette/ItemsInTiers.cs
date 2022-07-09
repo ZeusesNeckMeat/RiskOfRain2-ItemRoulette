@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace ItemRoulette
 {
-    internal class ItemsInTiers : IAsTier, IWithMaxItemsAllowed, IHavingDefaultItems, IItemsInTierCreator, IItemsInTier
+    internal class ItemsInTiers : IAsTier, IWithMaxItemsAllowed, IHavingDefaultVoidItems, IHavingDefaultItems, IItemsInTierCreator, IItemsInTier
     {
         private readonly IReadOnlyCollection<ItemTag> _forbiddenTags = new List<ItemTag>
         {
@@ -30,6 +30,7 @@ namespace ItemRoulette
 
         public ItemTier Tier { get; private set; }
         public List<PickupIndex> ItemsInInstance { get; private set; }
+        public List<PickupIndex> VoidItemsInInstance { get; private set; }
         public List<PickupIndex> ItemsAllowed { get; private set; }
 
         public void GenerateRemainingItems()
@@ -67,6 +68,12 @@ namespace ItemRoulette
         {
             ItemsInInstance.Clear();
             ItemsInInstance.AddRange(itemsAllowed.ToList());
+        }
+
+        public void SetVoidItemsInInstance(List<PickupIndex> voidItemsAllowed)
+        {
+            VoidItemsInInstance.Clear();
+            VoidItemsInInstance.AddRange(voidItemsAllowed.ToList());
         }
 
         public bool TryAddItemToItemsAllowed(PickupIndex pickupIndex)
@@ -136,10 +143,23 @@ namespace ItemRoulette
             return this;
         }        
 
-        public IWithMaxItemsAllowed HavingDefaultItems(List<PickupIndex> defaultItems)
+        public IHavingDefaultVoidItems HavingDefaultItems(List<PickupIndex> defaultItems)
         {
             ItemsInInstance = defaultItems;
             _defaultItemsCopied = new List<PickupIndex>(defaultItems).AsReadOnly();
+            _logger.LogInfo($"Default items loaded: {string.Join(", ", _defaultItemsCopied.Select(x => GetItemDef(x).name))}");
+            return this;
+        }
+
+        public IWithMaxItemsAllowed HavingDefaultVoidItems(List<PickupIndex> defaultVoidItems)
+        {
+            VoidItemsInInstance = defaultVoidItems;
+            _logger.LogInfo($"Default void items loaded: {string.Join(", ", _defaultItemsCopied.Select(x => GetItemDef(x).name))}");
+            return this;
+        }
+
+        public IWithMaxItemsAllowed HavingNoVoidItems()
+        {
             return this;
         }
 
@@ -161,7 +181,13 @@ namespace ItemRoulette
 
     internal interface IHavingDefaultItems
     {
-        IWithMaxItemsAllowed HavingDefaultItems(List<PickupIndex> defaultItems);
+        IHavingDefaultVoidItems HavingDefaultItems(List<PickupIndex> defaultItems);
+    }
+
+    internal interface IHavingDefaultVoidItems
+    {
+        IWithMaxItemsAllowed HavingDefaultVoidItems(List<PickupIndex> defaultVoidItems);
+        IWithMaxItemsAllowed HavingNoVoidItems();
     }
 
     internal interface IWithMaxItemsAllowed
@@ -183,6 +209,7 @@ namespace ItemRoulette
         void GenerateRemainingItems();
         void SetItemsInInstance();
         void SetItemsInInstance(List<PickupIndex> itemsAllowed);
+        void SetVoidItemsInInstance(List<PickupIndex> voidItemsAllowed);
         bool TryAddItemToItemsAllowed(PickupIndex pickupIndex);
         bool HasItemLimitBeenReached();
     }
