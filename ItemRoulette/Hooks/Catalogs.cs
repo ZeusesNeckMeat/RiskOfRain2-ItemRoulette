@@ -1,7 +1,4 @@
 ﻿using ItemRoulette.Configs;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 using Hook = On.RoR2;
 

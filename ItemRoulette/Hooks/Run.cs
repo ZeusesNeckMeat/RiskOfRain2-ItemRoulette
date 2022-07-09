@@ -1,7 +1,6 @@
 ﻿using BepInEx.Logging;
 using ItemRoulette.Configs;
 using On.RoR2.Artifacts;
-
 using Hook = On.RoR2;
 using RoR2Run = RoR2.Run;
 
@@ -22,28 +21,16 @@ namespace ItemRoulette.Hooks
             _hookStateTracker = hookStateTracker;
         }
 
-        public void OnBuildDropTable(Hook.Run.orig_BuildDropTable orig, RoR2Run self)
-        {
-            //clear default loaded lists first
-            _logger.LogInfo("Building full drop table before changing items");
-            orig(self);
-
-            _hookStateTracker.IsBuildDropTableDone = true;
-
-            if (_hookStateTracker.IsBuildDropTableDone && _hookStateTracker.IsMonsterGenerateAvailableItemsSetDone)
-                _customDropTable.BuildDropTable();
-        }
-
         public void OnBeginStage(Hook.Run.orig_BeginStage orig, RoR2Run self)
         {
             orig(self);
 
-            if (RoR2Run.instance.stageClearCount == 0)
+            if (self.stageClearCount == 0)
                 return;
 
-            var newLoopStarted = RoR2Run.instance.loopClearCount > _hookStateTracker.CurrentLoopCount;
+            var newLoopStarted = self.loopClearCount > _hookStateTracker.CurrentLoopCount;
             if (newLoopStarted)
-                _hookStateTracker.CurrentLoopCount = RoR2Run.instance.loopClearCount;
+                _hookStateTracker.CurrentLoopCount = self.loopClearCount;
 
             var shouldRefreshItemPool = _configSettings.GeneralSettings.ItemRefreshOptions == ItemRefreshOptions.EachStage
                                         || (_configSettings.GeneralSettings.ItemRefreshOptions == ItemRefreshOptions.EachLoop && newLoopStarted);
@@ -51,8 +38,20 @@ namespace ItemRoulette.Hooks
             if (!shouldRefreshItemPool)
                 return;
 
-            _customDropTable.ResetInstanceDropLists();
-            _customDropTable.BuildDropTable();
+            _customDropTable.ResetInstanceDropLists(self);
+            _customDropTable.BuildDropTable(self);
+        }
+
+        internal void GenerateWeightedSelection(Hook.BasicPickupDropTable.orig_GenerateWeightedSelection orig, RoR2.BasicPickupDropTable self, RoR2Run run)
+        {
+            if (!_hookStateTracker.IsBuildDropTableDone)
+            {
+                _customDropTable.BuildDropTable(run);
+                _logger.LogInfo("Building full drop table before changing items");
+            }
+
+            orig(self, run);
+            _hookStateTracker.IsBuildDropTableDone = true;
         }
 
         public void OnRunDestroy(Hook.Run.orig_OnDestroy orig, RoR2Run self)
@@ -69,13 +68,9 @@ namespace ItemRoulette.Hooks
             orig(self);
         }
 
-        public void OnGenerateAvailableItemsSet(MonsterTeamGainsItemsArtifactManager.orig_GenerateAvailableItemsSet orig)
+        public void OnGenerateAvailableItemsSet(MonsterTeamGainsItemsArtifactManager.orig_OnRunStartGlobal orig, RoR2Run self)
         {
-            orig();
-            _hookStateTracker.IsMonsterGenerateAvailableItemsSetDone = true;
-
-            if (_hookStateTracker.IsBuildDropTableDone && _hookStateTracker.IsMonsterGenerateAvailableItemsSetDone)
-                _customDropTable.BuildDropTable();
+            _customDropTable.AllowMonsterDrops(orig, self);
         }
     }
 }
