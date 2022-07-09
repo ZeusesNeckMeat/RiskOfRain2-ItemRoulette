@@ -49,6 +49,10 @@ The three current available choices are:
 
 These options should provide a little more variety for longer runs, if wanted. EachStage is probably not needed as it's really not that different from vanilla, but I threw it in there just in case.
 
+## Syncing void items
+
+There is a config option called `ShouldSyncVoidItems` under the `General` section. This will make it so any non-void items generated for the run through this mod will have their void item counterpart loaded. Only those void items will show up, unless the random items generated for a tier don't have any void counterpart between all items within that tier. In this situation a single void item from that tier is pulled at random instead in order to prevent weirdness with having an empty item tier.
+
 ## Adding Guaranteed Items to the pool
 
 There is a new section in the config file called `Guaranteed Items`. This section will show you all of the items generated for each tier with a number next to them. You can specify any number of items per tier, and you would place the numbers of that items into the config setting. These items will be added as "extra" items to that tier. So if you specify 5 items for `Tier 1` and you have `Paul's Goat Hoof` as your guaranteed item, then `Tier 1` will have 6 total items.
@@ -71,6 +75,10 @@ The above updates aren't exactly small, but I will try to work on them when I ha
 If you find any bugs, incompatibilities with other mods, or just general suggestions please feel free to add them to the [Issues section](https://github.com/ZeusesNeckMeat/RiskOfRain2-ItemRoulette/issues) in Github!
 	
 ## Changelog
+
+**3.0.0**
+* Updated to be compatible with SotV
+* Added new config option to sync Void items with the non-Void items generated through this mod
 
 **2.3.0**
 * Refactored the custom hooks to split some into separate files that made more sense
