@@ -76,6 +76,9 @@ If you find any bugs, incompatibilities with other mods, or just general suggest
 	
 ## Changelog
 
+**3.0.1**
+*Updated to be compatible with MysticsItems
+
 **3.0.0**
 * Updated to be compatible with SotV
 * Added new config option to sync Void items with the non-Void items generated through this mod

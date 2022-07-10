@@ -17,6 +17,7 @@ namespace ItemRoulette
         }.AsReadOnly();
 
         private IReadOnlyList<PickupIndex> _defaultItemsCopied;
+        private IReadOnlyList<PickupIndex> _defaultVoidItemsCopied;
         private int _maxItemsAllowed;
         private int _currentItemsInTier;
         private bool _areItemsAllowedDefaulted = false;
@@ -26,12 +27,12 @@ namespace ItemRoulette
         {
             _logger = logger;
             ItemsAllowed = new List<PickupIndex>();
+            VoidItemsAllowed = new List<PickupIndex>();
         }
 
         public ItemTier Tier { get; private set; }
-        public List<PickupIndex> ItemsInInstance { get; private set; }
-        public List<PickupIndex> VoidItemsInInstance { get; private set; }
         public List<PickupIndex> ItemsAllowed { get; private set; }
+        public List<PickupIndex> VoidItemsAllowed { get; private set; }
 
         public void GenerateRemainingItems()
         {
@@ -53,27 +54,25 @@ namespace ItemRoulette
             _logger.LogInfo($"{nameof(ItemsInTiers)}.{nameof(GenerateRemainingItems)} Number of items remaining to add: {numberOfItemsRemainingToAdd}");
 
             var remainingItemsToAdd = randomizedList.Take(numberOfItemsRemainingToAdd);
-            _logger.LogInfo($"{nameof(ItemsInTiers)}.{nameof(GenerateRemainingItems)} Remaining items to add: {string.Join(" - ", remainingItemsToAdd.Select(x => PickupCatalog.GetPickupDef(x).nameToken))}");
+            _logger.LogInfo($"{nameof(ItemsInTiers)}.{nameof(GenerateRemainingItems)} Remaining items to add: {string.Join(" - ", remainingItemsToAdd.Select(x => ItemInfos.GetPickupDef(x).nameToken))}");
 
             ItemsAllowed.AddRange(remainingItemsToAdd);
         }
 
-        public void SetItemsInInstance()
+        public List<PickupIndex> GetAllowedItems()
         {
-            ItemsInInstance.Clear();
-            ItemsInInstance.AddRange(ItemsAllowed.ToList());
+            if (ItemsAllowed.Any())
+                return ItemsAllowed.ToList();
+
+            return _defaultItemsCopied.ToList();
         }
 
-        public void SetItemsInInstance(List<PickupIndex> itemsAllowed)
+        public List<PickupIndex> GetAllowedVoidItems()
         {
-            ItemsInInstance.Clear();
-            ItemsInInstance.AddRange(itemsAllowed.ToList());
-        }
+            if (VoidItemsAllowed.Any())
+                return VoidItemsAllowed.ToList();
 
-        public void SetVoidItemsInInstance(List<PickupIndex> voidItemsAllowed)
-        {
-            VoidItemsInInstance.Clear();
-            VoidItemsInInstance.AddRange(voidItemsAllowed.ToList());
+            return _defaultVoidItemsCopied.ToList();
         }
 
         public bool TryAddItemToItemsAllowed(PickupIndex pickupIndex)
@@ -99,11 +98,11 @@ namespace ItemRoulette
             if (HasItemLimitBeenReached())
                 return false;
 
-            _logger.LogInfo($"Checking if {GetItemDef(pickupIndex).name} has already been added to {Tier}");
+            _logger.LogInfo($"Checking if {ItemInfos.GetItemDef(pickupIndex).name} has already been added to {Tier}");
             if (ItemsAllowed.Contains(pickupIndex))
                 return false;
 
-            _logger.LogInfo($"Checking if {Tier} contains an item allowed for monsters, and if {GetItemDef(pickupIndex).name} can be that item");
+            _logger.LogInfo($"Checking if {Tier} contains an item allowed for monsters, and if {ItemInfos.GetItemDef(pickupIndex).name} can be that item");
             if (!ItemsAllowed.Any(IsItemAllowedForMonsters) && !IsItemAllowedForMonsters(pickupIndex))
                 return false;
 
@@ -115,12 +114,6 @@ namespace ItemRoulette
         public bool HasItemLimitBeenReached()
         {
             return _currentItemsInTier == _maxItemsAllowed;
-        }
-
-        private ItemDef GetItemDef(PickupIndex pickupIndex)
-        {
-            var pickupDef = PickupCatalog.GetPickupDef(pickupIndex);
-            return pickupDef == null ? null : ItemCatalog.GetItemDef(pickupDef.itemIndex);
         }
 
         private bool IsItemAllowedForMonsters(PickupIndex pickupIndex)
@@ -145,16 +138,15 @@ namespace ItemRoulette
 
         public IHavingDefaultVoidItems HavingDefaultItems(List<PickupIndex> defaultItems)
         {
-            ItemsInInstance = defaultItems;
             _defaultItemsCopied = new List<PickupIndex>(defaultItems).AsReadOnly();
-            _logger.LogInfo($"Default items loaded: {string.Join(", ", _defaultItemsCopied.Select(x => GetItemDef(x).name))}");
+            _logger.LogInfo($"Default items loaded: {string.Join(", ", _defaultItemsCopied.Select(x => ItemInfos.GetItemDef(x).name))}");
             return this;
         }
 
         public IWithMaxItemsAllowed HavingDefaultVoidItems(List<PickupIndex> defaultVoidItems)
         {
-            VoidItemsInInstance = defaultVoidItems;
-            _logger.LogInfo($"Default void items loaded: {string.Join(", ", _defaultItemsCopied.Select(x => GetItemDef(x).name))}");
+            _defaultVoidItemsCopied = new List<PickupIndex>(defaultVoidItems).AsReadOnly();
+            _logger.LogInfo($"Default void items loaded: {string.Join(", ", _defaultItemsCopied.Select(x => ItemInfos.GetItemDef(x).name))}");
             return this;
         }
 
@@ -203,13 +195,12 @@ namespace ItemRoulette
     internal interface IItemsInTier
     {
         ItemTier Tier { get; }
-        List<PickupIndex> ItemsInInstance { get; }
         List<PickupIndex> ItemsAllowed { get; }
+        List<PickupIndex> VoidItemsAllowed { get; }
 
+        List<PickupIndex> GetAllowedItems();
+        List<PickupIndex> GetAllowedVoidItems();
         void GenerateRemainingItems();
-        void SetItemsInInstance();
-        void SetItemsInInstance(List<PickupIndex> itemsAllowed);
-        void SetVoidItemsInInstance(List<PickupIndex> voidItemsAllowed);
         bool TryAddItemToItemsAllowed(PickupIndex pickupIndex);
         bool HasItemLimitBeenReached();
     }

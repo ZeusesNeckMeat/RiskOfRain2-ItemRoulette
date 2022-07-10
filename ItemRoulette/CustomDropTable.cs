@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 using Hook = On.RoR2;
+using IRHook = ItemRoulette.Hooks;
 
 namespace ItemRoulette
 {
@@ -14,14 +15,63 @@ namespace ItemRoulette
     {
         private readonly ManualLogSource _logger;
         private readonly ConfigSettings _configSettings;
+        private readonly IRHook.HookStateTracker _hookStateTracker;
         private List<IItemsInTier> _itemsInTiers = new List<IItemsInTier>();
 
-        private readonly IDictionary<ItemTier, List<PickupIndex>> _allUnlockedItemsByDefault = new Dictionary<ItemTier, List<PickupIndex>>();
+        private readonly IDictionary<ItemTier, List<PickupIndex>> _allUnlockedItemsByDefault = GetDictionary();
+        private readonly IDictionary<ItemTier, List<PickupIndex>> _itemsInRun = GetDictionary();
 
-        public CustomDropTable(ManualLogSource logger, ConfigSettings configSettings)
+        private static IDictionary<ItemTier, List<PickupIndex>> GetDictionary() => new Dictionary<ItemTier, List<PickupIndex>>
+        {
+            [ItemTier.Tier1] = new List<PickupIndex>(),
+            [ItemTier.Tier2] = new List<PickupIndex>(),
+            [ItemTier.Tier3] = new List<PickupIndex>(),
+            [ItemTier.Boss] = new List<PickupIndex>(),
+            [ItemTier.Lunar] = new List<PickupIndex>(),
+            [ItemTier.VoidTier1] = new List<PickupIndex>(),
+            [ItemTier.VoidTier2] = new List<PickupIndex>(),
+            [ItemTier.VoidTier3] = new List<PickupIndex>(),
+            [ItemTier.VoidBoss] = new List<PickupIndex>()
+        };
+
+        public CustomDropTable(ManualLogSource logger, ConfigSettings configSettings, IRHook.HookStateTracker hookStateTracker)
         {
             _logger = logger;
             _configSettings = configSettings;
+            _hookStateTracker = hookStateTracker;
+        }
+
+        private void SetItemsInRun(Run run, bool isSyncVoidItems)
+        {
+            run.availableTier1DropList.Clear();
+            run.availableTier2DropList.Clear();
+            run.availableTier3DropList.Clear();
+            run.availableBossDropList.Clear();
+            run.availableLunarItemDropList.Clear();
+            run.availableTier1DropList.AddRange(_itemsInRun[ItemTier.Tier1]);
+            run.availableTier2DropList.AddRange(_itemsInRun[ItemTier.Tier2]);
+            run.availableTier3DropList.AddRange(_itemsInRun[ItemTier.Tier3]);
+            run.availableBossDropList.AddRange(_itemsInRun[ItemTier.Boss]);
+            run.availableLunarItemDropList.AddRange(_itemsInRun[ItemTier.Lunar]);
+
+            if (!isSyncVoidItems)
+                return;
+
+            run.availableVoidTier1DropList.Clear();
+            run.availableVoidTier2DropList.Clear();
+            run.availableVoidTier3DropList.Clear();
+            run.availableVoidBossDropList.Clear();
+            run.availableVoidTier1DropList.AddRange(_itemsInRun[ItemTier.VoidTier1]);
+            run.availableVoidTier2DropList.AddRange(_itemsInRun[ItemTier.VoidTier2]);
+            run.availableVoidTier3DropList.AddRange(_itemsInRun[ItemTier.VoidTier3]);
+            run.availableVoidBossDropList.AddRange(_itemsInRun[ItemTier.VoidBoss]);
+        }
+
+        private void SetAllUnlockedItemsByDefault(Run run)
+        {
+            var allItemDefs = run.availableItems.ToList().Select(ItemInfos.GetItemDef);
+            foreach (var tier in _allUnlockedItemsByDefault.Keys.ToList())
+                _allUnlockedItemsByDefault[tier] = allItemDefs.Where(x => x.tier == tier).Select(x => ItemInfos.GetPickupDef(x.itemIndex).pickupIndex).ToList();
         }
 
         public void BuildDropTable(Run run)
@@ -32,42 +82,29 @@ namespace ItemRoulette
                 return;
             }
 
-            if (!_allUnlockedItemsByDefault.TryGetValue(ItemTier.Tier1, out var tier1Items) && (tier1Items == null || !tier1Items.Any()))
-                _allUnlockedItemsByDefault[ItemTier.Tier1] = run.availableTier1DropList.ToList();
+            if (_hookStateTracker.IsBuildDropTableDone)
+            {
+                SetItemsInRun(run, _configSettings.GeneralSettings.ShouldSyncVoidItems);
+                return;
+            }
 
-            if (!_allUnlockedItemsByDefault.TryGetValue(ItemTier.Tier2, out var tier2Items) && (tier2Items == null || !tier2Items.Any()))
-                _allUnlockedItemsByDefault[ItemTier.Tier2] = run.availableTier2DropList.ToList();
+            SetAllUnlockedItemsByDefault(run);
+            var tier1Through3Items = _allUnlockedItemsByDefault[ItemTier.Tier1].Concat(_allUnlockedItemsByDefault[ItemTier.Tier2])
+                                                                               .Concat(_allUnlockedItemsByDefault[ItemTier.Tier3])
+                                                                               .ToList();
 
-            if (!_allUnlockedItemsByDefault.TryGetValue(ItemTier.Tier3, out var tier3Items) && (tier3Items == null || !tier3Items.Any()))
-                _allUnlockedItemsByDefault[ItemTier.Tier3] = run.availableTier3DropList.ToList();
-
-            if (!_allUnlockedItemsByDefault.TryGetValue(ItemTier.Boss, out var bossItems) && (bossItems == null || !bossItems.Any()))
-                _allUnlockedItemsByDefault[ItemTier.Boss] = run.availableBossDropList.ToList();
-
-            if (!_allUnlockedItemsByDefault.TryGetValue(ItemTier.Lunar, out var lunarItems) && (lunarItems == null || !lunarItems.Any()))
-                _allUnlockedItemsByDefault[ItemTier.Lunar] = run.availableLunarItemDropList.ToList();
-
-            if (!_allUnlockedItemsByDefault.TryGetValue(ItemTier.VoidTier1, out var voidTier1Items) && (voidTier1Items == null || !voidTier1Items.Any()))
-                _allUnlockedItemsByDefault[ItemTier.VoidTier1] = run.availableVoidTier1DropList.ToList();
-
-            if (!_allUnlockedItemsByDefault.TryGetValue(ItemTier.VoidTier2, out var voidTier2Items) && (voidTier2Items == null || !voidTier2Items.Any()))
-                _allUnlockedItemsByDefault[ItemTier.VoidTier2] = run.availableVoidTier2DropList.ToList();
-
-            if (!_allUnlockedItemsByDefault.TryGetValue(ItemTier.VoidTier3, out var voidTier3Items) && (voidTier3Items == null || !voidTier3Items.Any()))
-                _allUnlockedItemsByDefault[ItemTier.VoidTier3] = run.availableVoidTier3DropList.ToList();
-
-            if (!_allUnlockedItemsByDefault.TryGetValue(ItemTier.VoidBoss, out var voidBossItems) && (voidBossItems == null || !voidBossItems.Any()))
-                _allUnlockedItemsByDefault[ItemTier.VoidBoss] = run.availableVoidBossDropList.ToList();
-
-            var tier1Through3Items = run.availableTier1DropList.Concat(run.availableTier2DropList)
-                                                               .Concat(run.availableTier3DropList)
-                                                               .ToList();
+            _logger.LogInfo($"NumberOfItemsInTiers1Through3: {tier1Through3Items.Count}");
+            if (!tier1Through3Items.Any())
+            {
+                _logger.LogInfo("No items have been generated yet");
+                return;
+            }
 
             _logger.LogInfo("Loading default items for Boss and Lunar tiers");
 
             _itemsInTiers.ForEach(item => item = null);
             _itemsInTiers.Clear();
-            var itemsInTiersDefault = LoadDefaultItemsInTiers(run);
+            var itemsInTiersDefault = GetDefaultLoadedItemsInTiers();
 
             _logger.LogInfo("Loading initial information for AllItemsByType");
             var allItemsByTag = AllItemsByTag.Build(_logger)
@@ -84,29 +121,37 @@ namespace ItemRoulette
 
             _logger.LogInfo("Overwriting instance items with list of allowed items");
 
-            var guaranteedItemsSettings = _configSettings.GuaranteedItemsSettings.GetGuaranteedItemSettings();
-            foreach (var (itemTier, shouldUseOnlyGuaranteedItems, guaranteedItems) in guaranteedItemsSettings)
+            foreach (var (itemTier, shouldUseOnlyGuaranteedItems, guaranteedItems) in _configSettings.GuaranteedItemsSettings.GetGuaranteedItemSettings())
             {
                 var itemPoolForTier = _itemsInTiers.First(itemsInTier => itemsInTier.Tier == itemTier);
 
                 _logger.LogInfo($"{itemTier}: Should only use guaranteed: {shouldUseOnlyGuaranteedItems}. Total guaranteed items: {guaranteedItems?.Count()}");
-                if (guaranteedItems == null || !guaranteedItems.Any())
+                var itemsToAddToRun = new HashSet<PickupIndex>();
+                var hasGuaranteedItems = guaranteedItems != null && guaranteedItems.Any();
+
+                if (!hasGuaranteedItems || !shouldUseOnlyGuaranteedItems)
                 {
-                    itemPoolForTier.SetItemsInInstance();
-                    continue;
+                    foreach (var item in itemPoolForTier.ItemsAllowed)
+                        itemsToAddToRun.Add(item);
                 }
 
-                if (shouldUseOnlyGuaranteedItems)
-                    itemPoolForTier.SetItemsInInstance(guaranteedItems.ToList());
-                else
+                if (hasGuaranteedItems)
                 {
-                    itemPoolForTier.SetItemsInInstance();
-                    itemPoolForTier.ItemsInInstance.AddRange(guaranteedItems);
+                    foreach (var item in guaranteedItems)
+                        itemsToAddToRun.Add(item);
                 }
+
+                _itemsInRun[itemTier].Clear();
+                _itemsInRun[itemTier].AddRange(itemsToAddToRun);
             }
 
+            _hookStateTracker.IsBuildDropTableDone = true;
+
             if (!_configSettings.GeneralSettings.ShouldSyncVoidItems)
+            {
+                SetItemsInRun(run, _configSettings.GeneralSettings.ShouldSyncVoidItems);
                 return;
+            }
 
             var voidItemPairs = ItemCatalog.GetItemPairsForRelationship(DLC1Content.ItemRelationshipTypes.ContagiousItem);
 
@@ -115,43 +160,59 @@ namespace ItemRoulette
                 _logger.LogInfo($"VoidItemLog | Item: {voidItemPair.itemDef1.name} | VoidItem: {voidItemPair.itemDef2.name}");
             }
 
-            var voidItemsToAdd = new List<ItemDef>();
-            foreach (var pickup in _itemsInTiers.SelectMany(x => x.ItemsInInstance))
+            var voidItemsToAdd = new List<(ItemDef Item, ItemDef VoidItem)>();
+            foreach (var pickup in _itemsInTiers.SelectMany(x => x.ItemsAllowed))
             {
                 var itemDef = ItemInfos.GetItemDef(pickup);
 
                 if (!voidItemPairs.Any(x => x.itemDef1.itemIndex == itemDef.itemIndex))
                     continue;
 
-                voidItemsToAdd.Add(voidItemPairs.First(x => x.itemDef1.itemIndex == itemDef.itemIndex).itemDef2);
+                var pairedItemAndVoidItem = voidItemPairs.First(x => x.itemDef1.itemIndex == itemDef.itemIndex);
+                voidItemsToAdd.Add((pairedItemAndVoidItem.itemDef1, pairedItemAndVoidItem.itemDef2));
             }
 
-            _logger.LogInfo($"VoidItemsToLoad Tiers: {string.Join(", ", voidItemsToAdd.Select(x => x.tier.ToString()).Distinct())}");
+            _logger.LogInfo($"VoidItemsToLoad Tiers: {string.Join(", ", voidItemsToAdd.Select(x => x.VoidItem.tier.ToString()).Distinct())}");
 
             foreach (var itemsInTier in _itemsInTiers)
             {
                 if (itemsInTier.Tier == ItemTier.Lunar)
                     continue;
 
-                var voidItemsForTier = voidItemsToAdd.Where(x => x.tier.ToString().ToUpper().Contains(itemsInTier.Tier.ToString().ToUpper()))
-                                                     .Select(x => ItemInfos.GetPickupDef(x.itemIndex).pickupIndex)
+                var voidItemsForTier = voidItemsToAdd.Where(x => x.VoidItem.tier.ToString().ToUpper().Contains(itemsInTier.Tier.ToString().ToUpper()))
+                                                     .Select(x => x.VoidItem)
                                                      .ToList();
 
                 if (!voidItemsForTier.Any())
-                {
-                    var voidItemPairsForTier = voidItemPairs.Where(x => x.itemDef1.tier == itemsInTier.Tier).ToList();
-                    var randomVoidItemPairsForTier = voidItemPairsForTier.OrderBy(_ => Guid.NewGuid()).ToList();
-                    var firstItemInRandomList = randomVoidItemPairsForTier.FirstOrDefault();
-                    var voidItem = firstItemInRandomList.itemDef2.itemIndex;
-                    var pickupDef = ItemInfos.GetPickupDef(voidItem);
-                    voidItemsForTier.Add(pickupDef.pickupIndex);
-                }
+                    voidItemsForTier.Add(GetRandomVoidItem(voidItemPairs, itemsInTier));
 
-                itemsInTier.SetVoidItemsInInstance(voidItemsForTier);
+                var voidTier = voidItemsForTier.First().tier;
+                _itemsInRun[voidTier].Clear();
+                _itemsInRun[voidTier].AddRange(voidItemsForTier.Select(x => ItemInfos.GetPickupDef(x.itemIndex).pickupIndex));
             }
+
+            SetItemsInRun(run, _configSettings.GeneralSettings.ShouldSyncVoidItems);
+        }
+
+        private ItemDef GetRandomVoidItem(HG.ReadOnlyArray<ItemDef.Pair> voidItemPairs, IItemsInTier itemsInTier)
+        {
+            var voidItemPairsForTier = voidItemPairs.Where(x => x.itemDef1.tier == itemsInTier.Tier).ToList();
+            var randomVoidItemPairsForTier = voidItemPairsForTier.OrderBy(_ => Guid.NewGuid()).ToList();
+            var firstItemInRandomList = randomVoidItemPairsForTier.FirstOrDefault();
+            return firstItemInRandomList.itemDef2;
         }
 
         internal void GenerateWeightedSelectionArena(Hook.ArenaMonsterItemDropTable.orig_GenerateWeightedSelection orig, ArenaMonsterItemDropTable self, Run run)
+        {
+            AllowMonsterItemsToGenerate(run, () => orig(self, run));
+        }
+
+        public void AllowMonsterDrops(MonsterTeamGainsItemsArtifactManager.orig_OnRunStartGlobal orig, Run self)
+        {
+            AllowMonsterItemsToGenerate(self, () => orig(self));
+        }
+
+        private void AllowMonsterItemsToGenerate(Run run, Action action)
         {
             var tier1Holder = run.availableTier1DropList.ToList();
             var tier2Holder = run.availableTier2DropList.ToList();
@@ -165,7 +226,7 @@ namespace ItemRoulette
             run.availableTier2DropList.AddRange(_allUnlockedItemsByDefault[ItemTier.Tier2]);
             run.availableTier3DropList.AddRange(_allUnlockedItemsByDefault[ItemTier.Tier3]);
 
-            orig(self, run);
+            action();
 
             run.availableTier1DropList.Clear();
             run.availableTier2DropList.Clear();
@@ -174,31 +235,6 @@ namespace ItemRoulette
             run.availableTier1DropList.AddRange(tier1Holder);
             run.availableTier2DropList.AddRange(tier2Holder);
             run.availableTier3DropList.AddRange(tier3Holder);
-        }
-
-        public void AllowMonsterDrops(MonsterTeamGainsItemsArtifactManager.orig_OnRunStartGlobal orig, Run self)
-        {
-            var tier1Holder = self.availableTier1DropList.ToList();
-            var tier2Holder = self.availableTier2DropList.ToList();
-            var tier3Holder = self.availableTier3DropList.ToList();
-
-            self.availableTier1DropList.Clear();
-            self.availableTier2DropList.Clear();
-            self.availableTier3DropList.Clear();
-
-            self.availableTier1DropList.AddRange(_allUnlockedItemsByDefault[ItemTier.Tier1]);
-            self.availableTier2DropList.AddRange(_allUnlockedItemsByDefault[ItemTier.Tier2]);
-            self.availableTier3DropList.AddRange(_allUnlockedItemsByDefault[ItemTier.Tier3]);
-
-            orig(self);
-
-            self.availableTier1DropList.Clear();
-            self.availableTier2DropList.Clear();
-            self.availableTier3DropList.Clear();
-
-            self.availableTier1DropList.AddRange(tier1Holder);
-            self.availableTier2DropList.AddRange(tier2Holder);
-            self.availableTier3DropList.AddRange(tier3Holder);
         }
 
         public void ResetInstanceDropLists(Run self)
@@ -231,40 +267,39 @@ namespace ItemRoulette
             self.availableVoidBossDropList.AddRange(_allUnlockedItemsByDefault[ItemTier.VoidBoss]);
         }
 
-        private List<IItemsInTier> LoadDefaultItemsInTiers(Run run)
+        private List<IItemsInTier> GetDefaultLoadedItemsInTiers()
         {
-            //might have to update these to require the chest selectors
             var itemsInTier1 = ItemsInTiers.Build(_logger)
                                            .AsTier(ItemTier.Tier1)
-                                           .HavingDefaultItems(run.availableTier1DropList)
-                                           .HavingDefaultVoidItems(run.availableVoidTier1DropList)
+                                           .HavingDefaultItems(_allUnlockedItemsByDefault[ItemTier.Tier1])
+                                           .HavingDefaultVoidItems(_allUnlockedItemsByDefault[ItemTier.VoidTier1])
                                            .WithMaxItemsAllowed(_configSettings.ItemTierCountSettings.Tier1ItemCount)
                                            .Create();
 
             var itemsInTier2 = ItemsInTiers.Build(_logger)
                                            .AsTier(ItemTier.Tier2)
-                                           .HavingDefaultItems(run.availableTier2DropList)
-                                           .HavingDefaultVoidItems(run.availableVoidTier2DropList)
+                                           .HavingDefaultItems(_allUnlockedItemsByDefault[ItemTier.Tier2])
+                                           .HavingDefaultVoidItems(_allUnlockedItemsByDefault[ItemTier.VoidTier2])
                                            .WithMaxItemsAllowed(_configSettings.ItemTierCountSettings.Tier2ItemCount)
                                            .Create();
 
             var itemsInTier3 = ItemsInTiers.Build(_logger)
                                            .AsTier(ItemTier.Tier3)
-                                           .HavingDefaultItems(run.availableTier3DropList)
-                                           .HavingDefaultVoidItems(run.availableVoidTier3DropList)
+                                           .HavingDefaultItems(_allUnlockedItemsByDefault[ItemTier.Tier3])
+                                           .HavingDefaultVoidItems(_allUnlockedItemsByDefault[ItemTier.VoidTier3])
                                            .WithMaxItemsAllowed(_configSettings.ItemTierCountSettings.Tier3ItemCount)
                                            .Create();
 
             var itemsInBoss = ItemsInTiers.Build(_logger)
                                           .AsTier(ItemTier.Boss)
-                                          .HavingDefaultItems(run.availableBossDropList)
-                                          .HavingDefaultVoidItems(run.availableVoidBossDropList)
+                                          .HavingDefaultItems(_allUnlockedItemsByDefault[ItemTier.Boss])
+                                          .HavingDefaultVoidItems(_allUnlockedItemsByDefault[ItemTier.VoidBoss])
                                           .WithMaxItemsAllowed(_configSettings.ItemTierCountSettings.BossItemCount)
                                           .Create();
 
             var itemsInLunar = ItemsInTiers.Build(_logger)
                                            .AsTier(ItemTier.Lunar)
-                                           .HavingDefaultItems(run.availableLunarItemDropList)
+                                           .HavingDefaultItems(_allUnlockedItemsByDefault[ItemTier.Lunar])
                                            .HavingNoVoidItems()
                                            .WithMaxItemsAllowed(_configSettings.ItemTierCountSettings.LunarItemCount)
                                            .Create();

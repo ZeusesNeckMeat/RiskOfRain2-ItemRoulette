@@ -8,6 +8,8 @@ using UnityEngine;
 using CustomHooks = ItemRoulette.Hooks;
 using Hook = On.RoR2;
 
+[assembly: HG.Reflection.SearchableAttribute.OptIn]
+
 namespace ItemRoulette
 {
     [BepInProcess("Risk of Rain 2.exe")]
@@ -21,14 +23,12 @@ namespace ItemRoulette
             _configSettings = new ConfigSettings(Config, Logger);
 
             var hookStateTracker = new CustomHooks.HookStateTracker();
-            var customDropTable = new CustomDropTable(Logger, _configSettings);
+            var customDropTable = new CustomDropTable(Logger, _configSettings, hookStateTracker);
             var run = new CustomHooks.Run(Logger, _configSettings, customDropTable, hookStateTracker);
             var catalogs = new CustomHooks.Catalogs(_configSettings, hookStateTracker);
 
             Hook.ArenaMonsterItemDropTable.GenerateWeightedSelection += customDropTable.GenerateWeightedSelectionArena;
             Hook.Console.Awake += (orig, self) => orig(self);
-            Hook.ItemCatalog.Init += catalogs.OnItemCatalogInit;
-            Hook.PickupCatalog.Init += catalogs.OnPickupCatalogInit;
             Hook.Run.BeginStage += run.OnBeginStage;
             Hook.BasicPickupDropTable.GenerateWeightedSelection += run.GenerateWeightedSelection;
             Hook.Run.OnDestroy += run.OnRunDestroy;
