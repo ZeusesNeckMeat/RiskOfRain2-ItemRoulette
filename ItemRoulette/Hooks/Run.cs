@@ -38,20 +38,16 @@ namespace ItemRoulette.Hooks
             if (!shouldRefreshItemPool)
                 return;
 
+            _hookStateTracker.IsBuildDropTableDone = false;
             _customDropTable.ResetInstanceDropLists(self);
             _customDropTable.BuildDropTable(self);
         }
 
         internal void GenerateWeightedSelection(Hook.BasicPickupDropTable.orig_GenerateWeightedSelection orig, RoR2.BasicPickupDropTable self, RoR2Run run)
         {
-            if (!_hookStateTracker.IsBuildDropTableDone)
-            {
-                _customDropTable.BuildDropTable(run);
-                _logger.LogInfo("Building full drop table before changing items");
-            }
-
+            _customDropTable.BuildDropTable(run);
+            _logger.LogInfo("Building full drop table before changing items");
             orig(self, run);
-            _hookStateTracker.IsBuildDropTableDone = true;
         }
 
         public void OnRunDestroy(Hook.Run.orig_OnDestroy orig, RoR2Run self)
